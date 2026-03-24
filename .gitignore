@@ -1,0 +1,9 @@
+# IDE files
+.vscode
+
+# macOS
+.DS_Store
+
+# Environments
+.env
+.venv
