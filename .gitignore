@@ -1,5 +1,6 @@
 # IDE files
 .vscode
+.idea
 
 # macOS
 .DS_Store
@@ -7,3 +8,7 @@
 # Environments
 .env
 .venv
+
+# Frontend
+frontend/node_modules
+frontend/dist
