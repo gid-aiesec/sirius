@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get("/health")
+@router.get("/")
 async def health_check():
     return {"status": "ok",
             "message": "Server is running",
