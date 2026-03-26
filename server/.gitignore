@@ -1,0 +1,15 @@
+#Environments
+venv/
+.venv
+env
+.env
+
+# IDE files
+.vscode
+
+# macOS
+.DS_Store
+
+#Python cache
+__pycache__/
+*.pyc
