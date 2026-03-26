@@ -15,4 +15,10 @@ app.add_middleware(
     allow_headers=[os.getenv("ALLOWED_HEADERS")],
     allow_credentials=os.getenv("ALLOWED_CREDENTIALS"),
     )
-app.include_router(health_router)
+
+#Root Endpoint
+@app.get("/")
+async def root():
+    return {"message": "Server is running"}
+
+app.include_router(health_router,prefix="/api")
