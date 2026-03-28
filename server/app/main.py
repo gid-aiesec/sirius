@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.routes.health import router as health_router
+from app.routes.chat import router as chat_router
 
 load_dotenv()
 
@@ -22,3 +23,4 @@ async def root():
     return {"message": "Server is running"}
 
 app.include_router(health_router,prefix="/api")
+app.include_router(chat_router,prefix="/api")
