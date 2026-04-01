@@ -17,18 +17,28 @@ class EmbedResponse(BaseModel):
     embedding: list[float]
 
 
-@router.post("/chat")
+class TokenUsageResponse(BaseModel):
+    prompt_token_count: int | None = None
+    candidates_token_count: int | None = None
+    total_token_count: int | None = None
+
+
+class ChatResponse(BaseModel):
+    response: str
+    usage: TokenUsageResponse
+
+
+@router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     if not request.message.strip():
-        return {"error": "Message is required"}
+        raise HTTPException(status_code=400, detail="Message is required")
 
     system, contents = build_rag_prompt(
         request.system_prompt or "",
         request.sources,
         request.message,
     )
-    response = generate_response(contents, system)
-    return {"response": response}
+    return generate_response(contents, system)
 
 
 @router.post("/chat/embed", response_model=EmbedResponse)
