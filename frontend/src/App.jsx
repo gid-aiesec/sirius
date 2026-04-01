@@ -1,6 +1,36 @@
 import { useState, useRef } from 'react'
 import './App.css'
 
+/** Empty in dev (uses Vite proxy); set VITE_API_URL for production builds. */
+const apiUrl = (path) =>
+  `${(import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')}${path}`
+
+async function postChat(message) {
+  const res = await fetch(apiUrl('/api/chat'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  })
+  let data = {}
+  try {
+    data = await res.json()
+  } catch {
+    /* non-JSON body */
+  }
+  if (!res.ok) {
+    const d = data.detail ?? data.error
+    const msg =
+      typeof d === 'string'
+        ? d
+        : Array.isArray(d)
+          ? d.map((x) => x.msg ?? x).join('; ')
+          : res.statusText
+    throw new Error(msg || 'Request failed')
+  }
+  if (data.error) throw new Error(data.error)
+  return data.response
+}
+
 function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -27,11 +57,21 @@ function App() {
     const next = [...messages, { role: 'user', content: text }]
     setMessages(next)
     setLoading(true)
-    // TODO: POST /api/query { query: text }
-    await new Promise((r) => setTimeout(r, 1000)) // stub
-    setMessages([...next, { role: 'assistant', content: '(backend not connected yet)' }])
-    setLoading(false)
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    try {
+      const reply = await postChat(text)
+      setMessages([...next, { role: 'assistant', content: reply }])
+    } catch (err) {
+      setMessages([
+        ...next,
+        {
+          role: 'assistant',
+          content: `Error: ${err instanceof Error ? err.message : String(err)}`,
+        },
+      ])
+    } finally {
+      setLoading(false)
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    }
   }
 
   const handleKeyDown = (e) => {
