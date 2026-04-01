@@ -38,8 +38,12 @@ async def chat(request: ChatRequest):
         request.sources,
         request.message,
     )
-    return generate_response(contents, system)
 
+    response = generate_response(contents, system)
+
+    print("Generated Response:", response["response"], "Token: " , response["usage"]   )
+    
+    return response 
 
 @router.post("/chat/embed", response_model=EmbedResponse)
 async def embed_message(request: ChatRequest):
