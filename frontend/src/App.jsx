@@ -1,6 +1,69 @@
 import { useState, useRef } from 'react'
 import './App.css'
 
+/** Empty in dev (uses Vite proxy); set VITE_API_URL for production builds. */
+const apiUrl = (path) =>
+  `${(import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')}${path}`
+
+const defaultUserId = import.meta.env.VITE_DEFAULT_USER_ID ?? 'usr_demo_001'
+
+async function postChat(message, userId) {
+  const res = await fetch(apiUrl('/api/chat'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, user_id: userId }),
+  })
+  let data = {}
+  try {
+    data = await res.json()
+  } catch {
+    /* non-JSON body */
+  }
+  if (!res.ok) {
+    const d = data.detail ?? data.error
+    const msg =
+      typeof d === 'string'
+        ? d
+        : Array.isArray(d)
+          ? d.map((x) => x.msg ?? x).join('; ')
+          : res.statusText
+    throw new Error(msg || 'Request failed')
+  }
+  if (data.error) throw new Error(data.error)
+  return data.response
+}
+
+async function uploadCv(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('user_id', defaultUserId)
+
+  const res = await fetch(apiUrl('/api/ingest'), {
+    method: 'POST',
+    body: formData,
+  })
+
+  let data = {}
+  try {
+    data = await res.json()
+  } catch {
+    /* non-JSON body */
+  }
+
+  if (!res.ok) {
+    const d = data.detail ?? data.error
+    const msg =
+      typeof d === 'string'
+        ? d
+        : Array.isArray(d)
+          ? d.map((x) => x.msg ?? x).join('; ')
+          : res.statusText
+    throw new Error(msg || 'Upload failed')
+  }
+
+  return data
+}
+
 function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -14,10 +77,32 @@ function App() {
     const file = e.target.files[0]
     if (!file) return
     setUploading(true)
-    // TODO: POST /api/ingest with FormData
-    await new Promise((r) => setTimeout(r, 800)) // stub
-    setCvFile(file.name)
-    setUploading(false)
+    try {
+      const result = await uploadCv(file)
+      setCvFile(file.name)
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content:
+            result.status === 'success'
+              ? `Uploaded ${file.name}. ${result.message}`
+              : `Uploaded ${file.name}, but the server returned: ${result.message}`,
+        },
+      ])
+    } catch (err) {
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content: `Upload error: ${err instanceof Error ? err.message : String(err)}`,
+        },
+      ])
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    }
   }
 
   const handleSend = async () => {
@@ -27,11 +112,21 @@ function App() {
     const next = [...messages, { role: 'user', content: text }]
     setMessages(next)
     setLoading(true)
-    // TODO: POST /api/query { query: text }
-    await new Promise((r) => setTimeout(r, 1000)) // stub
-    setMessages([...next, { role: 'assistant', content: '(backend not connected yet)' }])
-    setLoading(false)
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    try {
+      const reply = await postChat(text, defaultUserId)
+      setMessages([...next, { role: 'assistant', content: reply }])
+    } catch (err) {
+      setMessages([
+        ...next,
+        {
+          role: 'assistant',
+          content: `Error: ${err instanceof Error ? err.message : String(err)}`,
+        },
+      ])
+    } finally {
+      setLoading(false)
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    }
   }
 
   const handleKeyDown = (e) => {
@@ -56,7 +151,7 @@ function App() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.docx,.txt"
+          accept=".pdf"
           style={{ display: 'none' }}
           onChange={handleUpload}
         />
@@ -90,9 +185,9 @@ function App() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={loading}
+          disabled={loading || uploading}
         />
-        <button onClick={handleSend} disabled={loading || !input.trim()}>
+        <button onClick={handleSend} disabled={loading || uploading || !input.trim()}>
           Send
         </button>
       </footer>
