@@ -1,11 +1,9 @@
-import os
-from google import genai
+from sentence_transformers import SentenceTransformer
 
-_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-EMBEDDING_MODEL = "models/text-embedding-004"
-
+print("Loading SentenceTransformer model (all-mpnet-base-v2)...")
+_model = SentenceTransformer('all-mpnet-base-v2')
+print("Model loaded successfully!")
 
 def embed_query(text: str) -> list[float]:
-    result = _client.models.embed_content(model=EMBEDDING_MODEL, contents=text)
-    return result.embeddings[0].values
+    vector = _model.encode(text).tolist()
+    return vector
