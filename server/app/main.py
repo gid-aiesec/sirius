@@ -29,3 +29,7 @@ app.include_router(health_router,prefix="/api")
 app.include_router(chat_router,prefix="/api")
 app.include_router(ingest_router, prefix="/api")
 app.include_router(query_router, prefix="/api/query")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", reload=True)
