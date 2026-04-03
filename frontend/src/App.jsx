@@ -7,11 +7,11 @@ const apiUrl = (path) =>
 
 const defaultUserId = import.meta.env.VITE_DEFAULT_USER_ID ?? 'usr_demo_001'
 
-async function postChat(message) {
+async function postChat(message, userId) {
   const res = await fetch(apiUrl('/api/chat'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, user_id: userId }),
   })
   let data = {}
   try {
@@ -113,7 +113,7 @@ function App() {
     setMessages(next)
     setLoading(true)
     try {
-      const reply = await postChat(text)
+      const reply = await postChat(text, defaultUserId)
       setMessages([...next, { role: 'assistant', content: reply }])
     } catch (err) {
       setMessages([

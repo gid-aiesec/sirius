@@ -3,13 +3,16 @@ from pydantic import BaseModel, Field
 from app.services.embedding import embed_query
 from app.services.gemini_client import generate_response
 from app.services.prompt import build_rag_prompt
+from app.services.retrieval import retrieve_sources
 
 router = APIRouter()
 
 
 class ChatRequest(BaseModel):
     message: str
+    user_id: str | None = None
     system_prompt: str | None = None
+    top_k: int = Field(default=5, ge=1, le=10)
     sources: list[str] = Field(default_factory=list)
 
 
@@ -33,9 +36,18 @@ async def chat(request: ChatRequest):
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message is required")
 
+    sources = request.sources
+    normalized_user_id = (request.user_id or "").strip()
+    if not sources and normalized_user_id:
+        sources = retrieve_sources(
+            request.message,
+            normalized_user_id,
+            request.top_k,
+        )
+
     system, contents = build_rag_prompt(
         request.system_prompt or "",
-        request.sources,
+        sources,
         request.message,
     )
 
