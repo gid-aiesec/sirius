@@ -80,9 +80,13 @@ pydantic==2.12.5
     #   fastapi
 pydantic-core==2.41.5
     # via pydantic
+python-multipart
+    # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via pinecone
 python-dotenv==1.2.2
+    # via -r requirements.in
+PyMuPDF
     # via -r requirements.in
 pyyaml==6.0.3
     # via
