@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI
+from fastapi import FastAPI,APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.health import router as health_router
 from app.routes.chat import router as chat_router
@@ -24,11 +24,13 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": "Server is running"}
+api_router = APIRouter(prefix="/api")
+api_router.include_router(health_router)
+api_router.include_router(chat_router)
+api_router.include_router(ingest_router)
+api_router.include_router(query_router, prefix="/query")
 
-app.include_router(health_router,prefix="/api")
-app.include_router(chat_router,prefix="/api")
-app.include_router(ingest_router, prefix="/api")
-app.include_router(query_router, prefix="/api/query")
+app.include_router(api_router)
 
 if __name__ == "__main__":
     import uvicorn
