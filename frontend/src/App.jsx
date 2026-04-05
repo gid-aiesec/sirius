@@ -1,5 +1,8 @@
 import { useState, useRef } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import './App.css'
+import logoNoBg from './assets/sirius-logo-no-bg.png'
 
 /** Empty in dev (uses Vite proxy); set VITE_API_URL for production builds. */
 const apiUrl = (path) =>
@@ -39,53 +42,18 @@ async function uploadCv(file) {
   return data
 }
 
-const SiriusLogoMark = ({ size = 32 }) => (
-  <svg width={size} height={size} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#38bdf8" />
-        <stop offset="100%" stopColor="#818cf8" />
-      </linearGradient>
-    </defs>
-    <path d="M60 10 L68 52 L110 60 L68 68 L60 110 L52 68 L10 60 L52 52 Z" fill="url(#starGrad)" opacity="0.95" />
-    <ellipse cx="60" cy="70" rx="38" ry="18" stroke="url(#starGrad)" strokeWidth="1.5" strokeDasharray="4 3" fill="none" transform="rotate(-20 60 70)" opacity="0.7" />
-    <circle cx="92" cy="52" r="4"   fill="#38bdf8" opacity="0.9" />
-    <circle cx="98" cy="65" r="3"   fill="#818cf8" opacity="0.8" />
-    <circle cx="30" cy="78" r="3.5" fill="#38bdf8" opacity="0.8" />
-    <circle cx="36" cy="90" r="2.5" fill="#818cf8" opacity="0.7" />
-  </svg>
-)
-
-function StarField() {
-  const stars = Array.from({ length: 60 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 1.5 + 0.5,
-    opacity: Math.random() * 0.5 + 0.1,
-    delay: Math.random() * 4,
-    duration: Math.random() * 3 + 2,
-  }))
+function MessageContent({ role, content }) {
+  if (role === 'user') return content
 
   return (
-    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
-      {stars.map(s => (
-        <div
-          key={s.id}
-          style={{
-            position: 'absolute',
-            left: `${s.x}%`,
-            top: `${s.y}%`,
-            width: `${s.size}px`,
-            height: `${s.size}px`,
-            borderRadius: '50%',
-            background: s.id % 3 === 0 ? '#38bdf8' : s.id % 3 === 1 ? '#818cf8' : '#e2e8f0',
-            opacity: s.opacity,
-            animation: `twinkle ${s.duration}s ${s.delay}s ease-in-out infinite alternate`,
-          }}
-        />
-      ))}
-    </div>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        a: ({ node, ...props }) => <a {...props} target="_blank" rel="noreferrer" />,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
   )
 }
 
@@ -175,21 +143,20 @@ export default function App() {
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
     >
-      <StarField />
-
+      {/* ─── DRAG OVERLAY ─── */}
       {dragOver && (
         <div className="drag-overlay">
-          <SiriusLogoMark size={56} />
+          <img src={logoNoBg} alt="Sirius" className="drag-overlay-logo" />
           <span className="drag-overlay-text">Drop your CV here</span>
         </div>
       )}
 
+      {/* ─── HEADER ─── */}
       <header className="topbar">
         <div className="topbar-logo">
           <div className="logo-mark-wrap">
-            <SiriusLogoMark size={34} />
+            <img src={logoNoBg} alt="Sirius" className="header-logo" />
           </div>
-          <span className="logo-text">SIRIUS</span>
         </div>
         <div className="topbar-divider" />
         <span className="tagline">Learning today. Guiding tomorrow.</span>
@@ -205,11 +172,12 @@ export default function App() {
         <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={handleFileInput} />
       </header>
 
+      {/* ─── CHAT ─── */}
       <main className="chat-area">
         {messages.length === 0 && (
           <div className="empty-state">
             <div className="empty-logo-wrap">
-              <SiriusLogoMark size={72} />
+              <img src={logoNoBg} alt="Sirius" className="empty-logo" />
             </div>
             <h1 className="empty-title">Your Career Guide</h1>
             <p className="empty-subtitle">
@@ -224,7 +192,9 @@ export default function App() {
         {messages.map((m, i) => (
           <div key={i} className={`bubble ${m.role}`}>
             <span className="bubble-label">{m.role === 'user' ? 'you' : 'sirius'}</span>
-            <div className="bubble-body">{m.content}</div>
+            <div className="bubble-body">
+              <MessageContent role={m.role} content={m.content} />
+            </div>
           </div>
         ))}
 
@@ -247,6 +217,7 @@ export default function App() {
         <div ref={bottomRef} />
       </main>
 
+      {/* ─── INPUT ─── */}
       <footer className="input-bar">
         <div className="input-wrap">
           <textarea
