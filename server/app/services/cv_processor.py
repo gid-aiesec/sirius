@@ -77,13 +77,17 @@ async def process_and_upsert_cv(
     Main pipeline to be called by the FastAPI route.
     Extracts text, chunks it, embeds it, and upserts to Pinecone.
     """
+    normalized_user_id = (user_id or "").strip()
+    if not normalized_user_id:
+        raise ValueError("user_id is required to upsert Pinecone vectors")
+
     total_start = perf_counter()
     extract_start = perf_counter()
     raw_text = await extract_text_from_pdf(file)
     extract_ms = round((perf_counter() - extract_start) * 1000, 2)
 
     chunk_start = perf_counter()
-    chunks_list = chunk_cv_robust_headers(raw_text, user_id)
+    chunks_list = chunk_cv_robust_headers(raw_text, normalized_user_id)
     chunk_ms = round((perf_counter() - chunk_start) * 1000, 2)
 
     embed_start = perf_counter()
@@ -99,12 +103,12 @@ async def process_and_upsert_cv(
         try:
             embedding_values = embed_query(text_content)
 
-            chunk_id = f"{user_id}-chunk-{idx}"
+            chunk_id = f"{normalized_user_id}-chunk-{idx}"
             vector_data = {
                 "id": chunk_id,
                 "values": embedding_values,
                 "metadata": {
-                    "user_id": user_id,
+                    "user_id": normalized_user_id,
                     "section": section_name,
                     "text": text_content,
                 },
@@ -115,7 +119,7 @@ async def process_and_upsert_cv(
             log_event(
                 "cv_chunk_embed_error",
                 operation_id=operation_id,
-                user_id=user_id,
+                user_id=normalized_user_id,
                 chunk_index=idx,
                 section=section_name,
                 error=str(exc),
@@ -139,7 +143,7 @@ async def process_and_upsert_cv(
     log_event(
         "cv_ingest_pipeline",
         operation_id=operation_id,
-        user_id=user_id,
+        user_id=normalized_user_id,
         filename=file.filename,
         status=status,
         extract_ms=extract_ms,

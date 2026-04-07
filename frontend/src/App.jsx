@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import './App.css'
@@ -7,8 +7,6 @@ import logoNoBg from './assets/sirius-logo-no-bg.png'
 /** Empty in dev (uses Vite proxy); set VITE_API_URL for production builds. */
 const apiUrl = (path) =>
   `${(import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')}${path}`
-
-const defaultUserId = import.meta.env.VITE_DEFAULT_USER_ID ?? 'usr_demo_001'
 
 async function postChat(message, userId) {
   const res = await fetch(apiUrl('/api/chat'), {
@@ -27,10 +25,10 @@ async function postChat(message, userId) {
   return data.response
 }
 
-async function uploadCv(file) {
+async function uploadCv(file, userId) {
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('user_id', defaultUserId)
+  formData.append('user_id', userId)
   const res = await fetch(apiUrl('/api/ingest'), { method: 'POST', body: formData })
   let data = {}
   try { data = await res.json() } catch { /* non-JSON body */ }
@@ -57,34 +55,109 @@ function MessageContent({ role, content }) {
   )
 }
 
+function LoginScreen({ exchanging }) {
+  return (
+    <div className="shell">
+      <header className="topbar">
+        <div className="topbar-logo">
+          <div className="logo-mark-wrap">
+            <img src={logoNoBg} alt="Sirius" className="header-logo" />
+          </div>
+        </div>
+        <div className="topbar-divider" />
+        <span className="tagline">Learning today. Guiding tomorrow.</span>
+      </header>
+      <main className="chat-area">
+        <div className="empty-state">
+          <div className="empty-logo-wrap">
+            <img src={logoNoBg} alt="Sirius" className="empty-logo" />
+          </div>
+          <h1 className="empty-title">Your Career Guide</h1>
+          <p className="empty-subtitle">
+            Sign in with your AIESEC account to get started.
+          </p>
+          {exchanging ? (
+            <div className="empty-hint">Signing you in…</div>
+          ) : (
+            <a href={apiUrl('/api/auth/login')} className="login-btn">
+              Sign in with EXPA
+            </a>
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}
+
 export default function App() {
+  const [userId, setUserId] = useState(() => localStorage.getItem('user_id'))
+  const [exchanging, setExchanging] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [cvFile, setCvFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [uploadStatusText, setUploadStatusText] = useState('Choose a PDF to upload.')
+  const [uploadError, setUploadError] = useState('')
   const [loading, setLoading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef(null)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
 
+  // Handle OAuth callback: exchange ?code= for a user_id
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    if (!code) return
+
+    window.history.replaceState({}, '', window.location.pathname)
+    setExchanging(true)
+
+    fetch(apiUrl('/api/auth/exchange'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.user_id) throw new Error('No user_id returned')
+        localStorage.setItem('user_id', data.user_id)
+        if (data.name) localStorage.setItem('expa_name', data.name)
+        setUserId(data.user_id)
+      })
+      .catch(() => setExchanging(false))
+  }, [])
+
+  if (!userId) return <LoginScreen exchanging={exchanging} />
+
+  const openUploadModal = () => {
+    setUploadModalOpen(true)
+    setUploadStatusText('Choose a PDF to upload.')
+    setUploadError('')
+  }
+
   const handleUpload = async (file) => {
-    if (!file || file.type !== 'application/pdf') return
+    if (!file) return
+    setUploadModalOpen(true)
+    if (file.type !== 'application/pdf') {
+      setUploadError('Only PDF files are supported.')
+      setUploadStatusText('Please choose a valid PDF file.')
+      return
+    }
+    setUploadError('')
+    setUploadStatusText(`Uploading ${file.name}...`)
     setUploading(true)
     try {
-      const result = await uploadCv(file)
+      const result = await uploadCv(file, userId)
       setCvFile(file.name)
-      setMessages((cur) => [...cur, {
-        role: 'assistant',
-        content: result.status === 'success'
-          ? `CV uploaded — ${file.name}. ${result.message}`
-          : `Uploaded ${file.name}, but the server returned: ${result.message}`,
-      }])
+      setUploadStatusText(`Upload complete: ${file.name}`)
+      if (result.status === 'success') {
+        setTimeout(() => setUploadModalOpen(false), 500)
+      }
     } catch (err) {
-      setMessages((cur) => [...cur, {
-        role: 'assistant',
-        content: `Upload error: ${err instanceof Error ? err.message : String(err)}`,
-      }])
+      setUploadError(err instanceof Error ? err.message : String(err))
+      setUploadStatusText('Upload failed.')
     } finally {
       setUploading(false)
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
@@ -113,7 +186,7 @@ export default function App() {
     setMessages(next)
     setLoading(true)
     try {
-      const reply = await postChat(text, defaultUserId)
+      const reply = await postChat(text, userId)
       setMessages([...next, { role: 'assistant', content: reply }])
     } catch (err) {
       setMessages([...next, {
@@ -163,7 +236,7 @@ export default function App() {
         <div className="topbar-spacer" />
         <button
           className={`upload-btn ${cvFile ? 'uploaded' : ''}`}
-          onClick={() => fileInputRef.current.click()}
+          onClick={openUploadModal}
           disabled={uploading}
         >
           <span className="upload-icon">{uploading ? '⟳' : cvFile ? '✓' : '↑'}</span>
@@ -183,7 +256,7 @@ export default function App() {
             <p className="empty-subtitle">
               Upload your CV and ask anything — from tailoring it for a role to uncovering hidden strengths.
             </p>
-            <div className="empty-hint" onClick={() => fileInputRef.current.click()}>
+            <div className="empty-hint" onClick={openUploadModal}>
               <span>↑</span> Drop a PDF or click to upload your CV
             </div>
           </div>
@@ -239,6 +312,38 @@ export default function App() {
         </div>
         <div className="input-footer">Shift+Enter for new line · PDF only</div>
       </footer>
+
+      {uploadModalOpen && (
+        <div className="upload-modal-backdrop" onClick={() => !uploading && setUploadModalOpen(false)}>
+          <div className="upload-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="upload-modal-title">Upload CV</div>
+            <div className="upload-modal-message">{uploadStatusText}</div>
+            {uploadError && <div className="upload-modal-error">{uploadError}</div>}
+            {uploading && (
+              <div className="upload-modal-progress">
+                <span className="upload-spinner" />
+                <span>Processing your CV. This can take a few seconds.</span>
+              </div>
+            )}
+            <div className="upload-modal-actions">
+              <button
+                className="upload-modal-btn"
+                onClick={() => fileInputRef.current.click()}
+                disabled={uploading}
+              >
+                {uploading ? 'Uploading...' : 'Choose PDF'}
+              </button>
+              <button
+                className="upload-modal-btn secondary"
+                onClick={() => setUploadModalOpen(false)}
+                disabled={uploading}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
