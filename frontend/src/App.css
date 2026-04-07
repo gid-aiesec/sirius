@@ -185,6 +185,32 @@ html, body, #root {
   font-size: 14px;
 }
 
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 1px solid var(--border-bright);
+  background: var(--blue-dim);
+  color: var(--blue);
+  margin-top: 8px;
+}
+
+.login-btn:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: var(--blue);
+  box-shadow: var(--glow);
+  transform: translateY(-1px);
+}
+
 /* ─── CHAT AREA ─── */
 .chat-area {
   flex: 1;
@@ -557,6 +583,88 @@ html, body, #root {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.upload-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(4, 6, 15, 0.78);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.upload-modal {
+  width: min(480px, 100%);
+  border: 1px solid var(--border-bright);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-mid) 100%);
+  box-shadow: var(--glow-strong);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.upload-modal-title {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.08em;
+  font-size: 19px;
+}
+
+.upload-modal-message {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.upload-modal-error {
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+.upload-modal-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.upload-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(56, 189, 248, 0.25);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: orbit 0.8s linear infinite;
+}
+
+.upload-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.upload-modal-btn {
+  border: 1px solid var(--border-bright);
+  background: var(--blue-dim);
+  color: var(--blue);
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.upload-modal-btn.secondary {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.upload-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ─── RESPONSIVE ─── */

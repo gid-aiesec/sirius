@@ -9,6 +9,7 @@ from app.routes.health import router as health_router
 from app.routes.chat import router as chat_router
 from app.routes.ingest import router as ingest_router
 from app.routes.query import router as query_router
+from app.routes.auth import router as auth_router
 
 app = FastAPI()
 
@@ -29,6 +30,7 @@ api_router.include_router(health_router)
 api_router.include_router(chat_router)
 api_router.include_router(ingest_router)
 api_router.include_router(query_router, prefix="/query")
+api_router.include_router(auth_router)
 
 app.include_router(api_router)
 
