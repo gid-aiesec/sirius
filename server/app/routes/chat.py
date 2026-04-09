@@ -82,7 +82,7 @@ async def chat(request: ChatRequest):
         )
 
         if normalized_user_id:
-            save_chat_message(user_id=normalized_user_id, role="assistant", content=response.response)
+            save_chat_message(user_id=normalized_user_id, role="assistant", content=response["response"])
 
         log_event(
             "rag_chat_pipeline",
