@@ -1,12 +1,10 @@
 import os
 from time import perf_counter
 from pinecone import Pinecone
-from dotenv import load_dotenv
+from app.config import settings
 from app.logging_utils import log_event
 
-load_dotenv()
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-
+PINECONE_API_KEY = settings.PINECONE_API_KEY
 
 def embed_text(user_query: str, input_type: str = "query") -> list[float]:
     """
