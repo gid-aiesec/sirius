@@ -4,7 +4,7 @@ from time import perf_counter
 from uuid import uuid4
 
 from app.logging_utils import log_event
-from app.services.embedding import embed_query
+from app.services.embedding import embed_text
 from app.services.gemini_client import generate_response
 from app.services.prompt import build_rag_prompt
 from app.services.retrieval import retrieve_sources
@@ -125,4 +125,4 @@ async def fetch_chat_history(user_id: str):
 async def embed_message(request: ChatRequest):
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
-    return EmbedResponse(embedding=embed_query(request.message))
+    return EmbedResponse(embedding=embed_text(request.message, input_type="query"))
