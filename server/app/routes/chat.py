@@ -9,6 +9,8 @@ from app.services.gemini_client import generate_response
 from app.services.prompt import build_rag_prompt
 from app.services.retrieval import retrieve_sources
 
+from app.services.supabase_client import save_chat_message, get_chat_history
+
 router = APIRouter()
 
 
@@ -43,6 +45,10 @@ async def chat(request: ChatRequest):
 
     sources = request.sources
     normalized_user_id = (request.user_id or "").strip()
+    
+    if normalized_user_id:
+        save_chat_message(user_id=normalized_user_id, role="user", content=request.message)
+
     try:
         if not sources and normalized_user_id:
             retrieval_start = perf_counter()
@@ -75,6 +81,9 @@ async def chat(request: ChatRequest):
             user_id=normalized_user_id or None,
         )
 
+        if normalized_user_id:
+            save_chat_message(user_id=normalized_user_id, role="assistant", content=response.response)
+
         log_event(
             "rag_chat_pipeline",
             operation_id=operation_id,
@@ -97,6 +106,20 @@ async def chat(request: ChatRequest):
             error=str(exc),
         )
         raise HTTPException(status_code=500, detail=f"Chat request failed: {exc}") from exc
+
+
+@router.get("/chat/history/{user_id}")
+async def fetch_chat_history(user_id: str):
+    normalized_id = user_id.strip()
+    if not normalized_id:
+        raise HTTPException(status_code=400, detail="User ID is required")
+    
+    try:
+        history = get_chat_history(normalized_id)
+        return {"status": "success", "data": history}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch history: {exc}")
+
 
 @router.post("/chat/embed", response_model=EmbedResponse)
 async def embed_message(request: ChatRequest):

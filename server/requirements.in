@@ -6,5 +6,6 @@ python-dotenv
 pydantic
 python-multipart
 PyMuPDF
-google-genai
-httpx
+google-genai>=1.70.0
+httpx>=0.28.1,<0.29
+supabase>=2.28.3

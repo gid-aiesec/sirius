@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import './App.css'
@@ -23,6 +23,31 @@ async function postChat(message, userId) {
   }
   if (data.error) throw new Error(data.error)
   return data.response
+}
+
+// -----------------------------------------------------------------
+// FITUR BARU: Fungsi untuk mengambil riwayat chat dari Supabase via Backend
+// -----------------------------------------------------------------
+async function fetchChatHistory(userId) {
+  if (!userId) return []
+  try {
+    const res = await fetch(apiUrl(`/api/chat/history/${userId}`), {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const data = await res.json()
+    if (res.ok && data.status === 'success' && Array.isArray(data.data)) {
+      // Format data Supabase ke format pesan React (role dan content)
+      return data.data.map((msg) => ({
+        role: msg.role,
+        content: msg.content
+      }))
+    }
+    return []
+  } catch (error) {
+    console.error("Failed to load chat history:", error)
+    return []
+  }
 }
 
 async function uploadCv(file, userId) {
@@ -101,6 +126,10 @@ export default function App() {
   const [uploadError, setUploadError] = useState('')
   const [loading, setLoading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  
+  // State untuk melacak apakah history sedang dimuat
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
   const fileInputRef = useRef(null)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
@@ -128,6 +157,25 @@ export default function App() {
       })
       .catch(() => setExchanging(false))
   }, [])
+
+  const loadHistory = useCallback(async () => {
+    if (!userId) return
+    setLoadingHistory(true)
+    const history = await fetchChatHistory(userId)
+    if (history.length > 0) {
+      setMessages(history)
+      // Scroll ke bawah sedikit setelah history dimuat
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    }
+    setLoadingHistory(false)
+  }, [userId])
+
+  useEffect(() => {
+    if (userId) {
+      loadHistory()
+    }
+  }, [userId, loadHistory])
+
 
   if (!userId) return <LoginScreen exchanging={exchanging} />
 
@@ -247,7 +295,13 @@ export default function App() {
 
       {/* ─── CHAT ─── */}
       <main className="chat-area">
-        {messages.length === 0 && (
+        {loadingHistory && (
+          <div className="empty-hint" style={{ textAlign: 'center', marginTop: '20px' }}>
+            Loading your chat history...
+          </div>
+        )}
+
+        {!loadingHistory && messages.length === 0 && (
           <div className="empty-state">
             <div className="empty-logo-wrap">
               <img src={logoNoBg} alt="Sirius" className="empty-logo" />
@@ -262,7 +316,7 @@ export default function App() {
           </div>
         )}
 
-        {messages.map((m, i) => (
+        {!loadingHistory && messages.map((m, i) => (
           <div key={i} className={`bubble ${m.role}`}>
             <span className="bubble-label">{m.role === 'user' ? 'you' : 'sirius'}</span>
             <div className="bubble-body">
