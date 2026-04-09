@@ -1,16 +1,12 @@
-import os
 from pinecone import Pinecone
-from dotenv import load_dotenv
-
-# Load environment variables from the .env file
-load_dotenv()
+from app.config import settings
 
 def get_pinecone_index():
     """
     Initializes the connection to Pinecone and returns the Index object.
     """
-    api_key = os.getenv("PINECONE_API_KEY")
-    index_name = os.getenv("PINECONE_INDEX_NAME", "sirus-cv-rag")
+    api_key = settings.PINECONE_API_KEY
+    index_name = settings.PINECONE_INDEX_NAME
 
     if not api_key:
         raise ValueError("PINECONE_API_KEY not found in the .env file!")

@@ -1,7 +1,7 @@
 from typing import Any
 
 from app.database import vector_index
-from app.services.embedding import embed_query
+from app.services.embedding import embed_text
 
 
 def _get_match_metadata(match: Any) -> dict:
@@ -19,7 +19,7 @@ def retrieve_sources(query_text: str, user_id: str, top_k: int = 5) -> list[str]
     if not query or not normalized_user_id:
         return []
 
-    embedding = embed_query(query)
+    embedding = embed_text(query, input_type="query")
     result = vector_index.query(
         vector=embedding,
         top_k=top_k,

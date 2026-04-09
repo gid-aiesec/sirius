@@ -4,7 +4,7 @@ from time import perf_counter
 from uuid import uuid4
 
 from app.logging_utils import log_event
-from app.services.embedding import embed_query
+from app.services.embedding import embed_text
 from app.services.gemini_client import generate_response
 from app.services.prompt import build_rag_prompt
 from app.services.retrieval import retrieve_sources
@@ -37,7 +37,7 @@ class ChatResponse(BaseModel):
     usage: TokenUsageResponse
 
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     operation_id = uuid4().hex
     if not request.message.strip():
@@ -108,7 +108,7 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=f"Chat request failed: {exc}") from exc
 
 
-@router.get("/chat/history/{user_id}")
+@router.get("/history/{user_id}")
 async def fetch_chat_history(user_id: str):
     normalized_id = user_id.strip()
     if not normalized_id:
@@ -121,8 +121,8 @@ async def fetch_chat_history(user_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {exc}")
 
 
-@router.post("/chat/embed", response_model=EmbedResponse)
+@router.post("/embed", response_model=EmbedResponse)
 async def embed_message(request: ChatRequest):
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
-    return EmbedResponse(embedding=embed_query(request.message))
+    return EmbedResponse(embedding=embed_text(request.message, input_type="query"))

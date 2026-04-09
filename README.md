@@ -1,14 +1,16 @@
 <p align="center">
-  <img src="frontend/public/favicon.png" alt="Sirius Logo" width="100"/>
+  <img src="frontend/src/assets/sirius-logo-no-bg.png" alt="Sirius Logo" width="250" height="auto"/>
 </p>
 
-## Sirius
+## GID 2026.1 - **AI & RnD Team Practice Project**
 
-GID 2026.1 - **AI/ML Team Practice Project**
+CV-aware RAG assistant: Ingest → Process → Retrieve → Generate.
 
-CV-aware RAG assistant — Ingest → Process → Retrieve → Generate.
-
-| Layer | Stack | Dir |
+| Layer | Stack | Path |
 |-------|-------|-----|
-| Frontend | React + Vite | `frontend/` |
-| Backend | FastAPI + Supabase | `server/` |
+| Frontend | React.js + Vite | `frontend/` |
+| Backend | FastAPI | `server/app/` |
+| Authentication | EXPA OAuth | `server/app/routes/auth,.py` |
+| LLM Provider | Google Gemini | `server/app/services/gemini_client.py` |
+| Vector DB | Pinecone | `server/app/database.py` |
+| PostgreSQL DB | Supabase | `server/app/services/supabase_client.py` |

@@ -2,20 +2,35 @@
   <img src="../frontend/public/favicon.png" alt="Sirius Logo" width="100"/>
 </p>
 
-# Sirus Backend Server
+## Sirius Backend Server
 
-## Setup Instructions (Local Development)
+Python (FastAPI)
+- EXPA OAuth flow
+- Chat creation and messaging logic
+- Chat history (via Supabase)
+- RAG Pipeline & Chatbot logic (via Pinecone & Google Gemini)
+
+<br />
+
+**Setup Instructions (Local Development)**
 
 1. **Install dependencies:**
+   
    We use `pip-tools` to manage dependencies safely.
    ```bash
+   cd server
    pip install pip-tools
-   pip-compile requirements.in
-   pip install -r requirements.txt
+   pip-compile
+   pip-sync
+   ```
 
 2. **Environment Variables:**
-Copy .env.example to .env. Contact the PM for the active Pinecone API Key.
+   
+   Copy `.env.example` to `.env` and set the required variables.
 
 3. **Run the FastAPI Server:**
-uvicorn app.main:app --reload
-The server will run on http://localhost:8000.
+   
+   ```bash
+   python -m app.main
+   ```
+   The server will run on `http://localhost:8000`

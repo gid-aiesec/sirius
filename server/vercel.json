@@ -1,0 +1,14 @@
+{
+    "builds": [
+        {
+            "src": "app/main.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        { "src": "/api/(.*)", "dest": "app/main.py" },
+        { "src": "^/$", "status": 308, "headers": { "Location": "/docs" } },
+        { "src": "/docs", "dest": "app/main.py" },
+        { "src": "/openapi.json", "dest": "app/main.py" }
+    ]
+}

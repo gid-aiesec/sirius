@@ -54,7 +54,7 @@ async function uploadCv(file, userId) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('user_id', userId)
-  const res = await fetch(apiUrl('/api/ingest'), { method: 'POST', body: formData })
+  const res = await fetch(apiUrl('/api/rag/ingest'), { method: 'POST', body: formData })
   let data = {}
   try { data = await res.json() } catch { /* non-JSON body */ }
   if (!res.ok) {

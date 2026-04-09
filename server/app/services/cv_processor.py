@@ -3,7 +3,7 @@ from time import perf_counter
 
 import fitz  # PyMuPDF
 from fastapi import UploadFile
-from app.services.embedding import embed_query
+from app.services.embedding import embed_text
 from app.database import vector_index
 from app.logging_utils import log_event
 
@@ -101,7 +101,7 @@ async def process_and_upsert_cv(
             continue
 
         try:
-            embedding_values = embed_query(text_content)
+            embedding_values = embed_text(text_content, input_type="passage")
 
             chunk_id = f"{normalized_user_id}-chunk-{idx}"
             vector_data = {
