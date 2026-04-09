@@ -34,6 +34,9 @@ def retrieve_sources(query_text: str, user_id: str, top_k: int = 5) -> list[str]
     sources: list[str] = []
     for match in matches or []:
         metadata = _get_match_metadata(match)
+        match_user_id = str(metadata.get("user_id", "")).strip()
+        if match_user_id != normalized_user_id:
+            continue
         text = str(metadata.get("text", "")).strip()
         section = str(metadata.get("section", "")).strip()
         if not text:
