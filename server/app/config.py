@@ -8,13 +8,16 @@ class Settings:
     Central class to hold injected env variables
     """
 
+    # logger outputs
+    WRITE_LOGS: bool = str(os.getenv("WRITE_LOGS", "false")).lower() in {"1", "true", "yes"}
+
     # expa oauth
     EXPA_CLIENT_ID: str = os.getenv("EXPA_CLIENT_ID")
     EXPA_CLIENT_SECRET: str = os.getenv("EXPA_CLIENT_SECRET")
     EXPA_REDIRECT_URI: str = os.getenv("EXPA_REDIRECT_URI")
     EXPA_TOKEN_URL: str = os.getenv("EXPA_TOKEN_URL")
     AIESEC_GRAPHQL_ENDPOINT: str = os.getenv("AIESEC_GRAPHQL_ENDPOINT")
-    EXPA_OAUTH_SCOPE: str = os.getenv("AIESEC_GRAPHQL_ENDPOINT", "")
+    EXPA_OAUTH_SCOPE: str = os.getenv("EXPA_OAUTH_SCOPE", "")
 
     # pinecone client
     PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY")
