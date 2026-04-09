@@ -7,7 +7,7 @@ from app.config import settings
 from app.logging_utils import log_event
 
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = settings.GEMINI_MODEL
 
 
 def generate_response(
