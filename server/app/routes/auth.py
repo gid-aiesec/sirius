@@ -1,19 +1,19 @@
-import os
 from urllib.parse import urlencode
 
 import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
+from app.config import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-_CLIENT_ID = os.getenv("EXPA_CLIENT_ID")
-_CLIENT_SECRET = os.getenv("EXPA_CLIENT_SECRET")
+_CLIENT_ID = settings.EXPA_CLIENT_ID
+_CLIENT_SECRET = settings.EXPA_CLIENT_SECRET
 # Must match the redirect URI registered for this OAuth app (path + port + scheme, exact string).
-_REDIRECT_URI = os.getenv("EXPA_REDIRECT_URI")
-_GQL_ENDPOINT = os.getenv("AIESEC_GRAPHQL_ENDPOINT")
-_TOKEN_URL = "https://auth.aiesec.org/oauth/token"
+_REDIRECT_URI = settings.EXPA_REDIRECT_URI
+_GQL_ENDPOINT = settings.AIESEC_GRAPHQL_ENDPOINT
+_TOKEN_URL = settings.EXPA_TOKEN_URL
 
 _CURRENT_PERSON_QUERY = """
 query {
@@ -43,7 +43,7 @@ def _authorize_url() -> str:
         "client_id": _CLIENT_ID,
         "redirect_uri": _REDIRECT_URI,
     }
-    scope = os.getenv("EXPA_OAUTH_SCOPE", "").strip()
+    scope = settings.EXPA_OAUTH_SCOPE.strip()
     if scope:
         params["scope"] = scope
     return f"https://auth.aiesec.org/oauth/authorize?{urlencode(params)}"

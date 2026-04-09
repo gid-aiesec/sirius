@@ -1,4 +1,3 @@
-import os
 from time import perf_counter
 from pinecone import Pinecone
 from app.config import settings

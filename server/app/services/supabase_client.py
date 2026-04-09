@@ -1,12 +1,8 @@
-import os
 from supabase import create_client, Client
-from dotenv import load_dotenv
+from app.config import settings
 
-# Ensure .env is loaded
-load_dotenv()
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_URL = settings.SUPABASE_URL
+SUPABASE_KEY = settings.SUPABASE_KEY
 
 # Initialize client
 supabase: Client | None = None
