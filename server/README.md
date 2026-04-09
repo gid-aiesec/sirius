@@ -18,9 +18,10 @@ Python (FastAPI)
    
    We use `pip-tools` to manage dependencies safely.
    ```bash
+   cd server
    pip install pip-tools
-   pip-compile requirements.in
-   pip install -r requirements.txt
+   pip-compile
+   pip-sync
    ```
 
 2. **Environment Variables:**
