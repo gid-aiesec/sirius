@@ -15,10 +15,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("ALLOWED_ORIGINS")],
-    allow_methods=[os.getenv("ALLOWED_METHODS")],
-    allow_headers=[os.getenv("ALLOWED_HEADERS")],
-    allow_credentials=os.getenv("ALLOWED_CREDENTIALS"),
+        allow_origins=[origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",") if origin.strip()],
+        allow_methods=[method.strip() for method in os.getenv("ALLOWED_METHODS", "*").split(",") if method.strip()],
+        allow_headers=[header.strip() for header in os.getenv("ALLOWED_HEADERS", "*").split(",") if header.strip()],
+        allow_credentials=os.getenv("ALLOWED_CREDENTIALS", "false").lower() in {"1", "true", "yes"},
     )
 
 #Root Endpoint
