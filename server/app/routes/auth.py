@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from app.config import settings
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 
 _CLIENT_ID = settings.EXPA_CLIENT_ID
 _CLIENT_SECRET = settings.EXPA_CLIENT_SECRET
