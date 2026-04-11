@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import './App.css'
@@ -65,6 +65,20 @@ async function uploadCv(file, userId) {
   return data
 }
 
+const CV_UPLOAD_STORAGE_KEY = 'sirius_cv_upload'
+
+function readStoredCvFilename(userId) {
+  if (!userId) return null
+  try {
+    const raw = localStorage.getItem(CV_UPLOAD_STORAGE_KEY)
+    if (!raw) return null
+    const { userId: savedId, filename } = JSON.parse(raw)
+    return savedId === userId && typeof filename === 'string' ? filename : null
+  } catch {
+    return null
+  }
+}
+
 function MessageContent({ role, content }) {
   if (role === 'user') return content
 
@@ -119,7 +133,9 @@ export default function App() {
   const [exchanging, setExchanging] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
-  const [cvFile, setCvFile] = useState(null)
+  const [cvFile, setCvFile] = useState(() =>
+    readStoredCvFilename(localStorage.getItem('user_id')),
+  )
   const [uploading, setUploading] = useState(false)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [uploadStatusText, setUploadStatusText] = useState('Choose a PDF to upload.')
@@ -131,8 +147,18 @@ export default function App() {
   const [loadingHistory, setLoadingHistory] = useState(false)
 
   const fileInputRef = useRef(null)
-  const bottomRef = useRef(null)
+  const chatAreaRef = useRef(null)
   const textareaRef = useRef(null)
+
+  /** Scroll chat pane to end; relies on .chat-area padding-bottom for space above the input. */
+  const scrollChatToBottom = useCallback(() => {
+    const el = chatAreaRef.current
+    if (!el) return
+    const run = () => {
+      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+    }
+    requestAnimationFrame(() => requestAnimationFrame(run))
+  }, [])
 
   // Handle OAuth callback: exchange ?code= for a user_id
   useEffect(() => {
@@ -164,8 +190,6 @@ export default function App() {
     const history = await fetchChatHistory(userId)
     if (history.length > 0) {
       setMessages(history)
-      // Scroll ke bawah sedikit setelah history dimuat
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
     }
     setLoadingHistory(false)
   }, [userId])
@@ -176,6 +200,15 @@ export default function App() {
     }
   }, [userId, loadHistory])
 
+  useEffect(() => {
+    setCvFile(readStoredCvFilename(userId))
+  }, [userId])
+
+  useLayoutEffect(() => {
+    if (!userId || loadingHistory) return
+    if (messages.length === 0 && !loading) return
+    scrollChatToBottom()
+  }, [userId, loadingHistory, messages, loading, scrollChatToBottom])
 
   if (!userId) return <LoginScreen exchanging={exchanging} />
 
@@ -199,6 +232,10 @@ export default function App() {
     try {
       const result = await uploadCv(file, userId)
       setCvFile(file.name)
+      localStorage.setItem(
+        CV_UPLOAD_STORAGE_KEY,
+        JSON.stringify({ userId, filename: file.name }),
+      )
       setUploadStatusText(`Upload complete: ${file.name}`)
       if (result.status === 'success') {
         setTimeout(() => setUploadModalOpen(false), 500)
@@ -208,7 +245,6 @@ export default function App() {
       setUploadStatusText('Upload failed.')
     } finally {
       setUploading(false)
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     }
   }
 
@@ -243,7 +279,6 @@ export default function App() {
       }])
     } finally {
       setLoading(false)
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     }
   }
 
@@ -294,7 +329,7 @@ export default function App() {
       </header>
 
       {/* ─── CHAT ─── */}
-      <main className="chat-area">
+      <main className="chat-area" ref={chatAreaRef}>
         {loadingHistory && (
           <div className="empty-hint" style={{ textAlign: 'center', marginTop: '20px' }}>
             Loading your chat history...
@@ -340,8 +375,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        <div ref={bottomRef} />
       </main>
 
       {/* ─── INPUT ─── */}

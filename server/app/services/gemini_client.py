@@ -10,6 +10,26 @@ client = genai.Client(api_key=settings.GEMINI_API_KEY)
 MODEL_NAME = settings.GEMINI_MODEL
 
 
+def _extract_response_text(response) -> str:
+    """Avoid response.text raising on blocked/empty or multi-part replies (google-genai)."""
+    try:
+        t = response.text
+        if t is not None:
+            return t
+    except Exception:
+        pass
+    parts: list[str] = []
+    for cand in getattr(response, "candidates", None) or []:
+        content = getattr(cand, "content", None)
+        if not content:
+            continue
+        for part in getattr(content, "parts", None) or []:
+            txt = getattr(part, "text", None)
+            if txt:
+                parts.append(txt)
+    return "".join(parts)
+
+
 def generate_response(
     contents: str,
     system_instruction: str | None = None,
@@ -17,6 +37,9 @@ def generate_response(
     operation_id: str | None = None,
     user_id: str | None = None,
 ) -> dict:
+    if not settings.GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY is missing; set it in server .env")
+
     kwargs: dict = {"model": MODEL_NAME, "contents": contents}
     if system_instruction:
         kwargs["config"] = types.GenerateContentConfig(
@@ -38,8 +61,20 @@ def generate_response(
     gemini_response_ms = round((perf_counter() - start) * 1000, 2)
 
     usage = getattr(response, "usage_metadata", None)
+    text_out = _extract_response_text(response)
+    if not text_out.strip():
+        pf = getattr(response, "prompt_feedback", None)
+        block = getattr(pf, "block_reason", None) if pf else None
+        log_event(
+            "gemini_empty_response",
+            operation_id=operation_id,
+            user_id=user_id,
+            model=MODEL_NAME,
+            block_reason=str(block) if block is not None else None,
+        )
+
     result = {
-        "response": response.text or "",
+        "response": text_out,
         "usage": {
             "prompt_token_count": getattr(usage, "prompt_token_count", None),
             "candidates_token_count": getattr(

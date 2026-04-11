@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from time import perf_counter
@@ -12,6 +14,7 @@ from app.services.retrieval import retrieve_sources
 from app.services.supabase_client import save_chat_message, get_chat_history
 
 router = APIRouter()
+_log = logging.getLogger(__name__)
 
 
 class ChatRequest(BaseModel):
@@ -97,6 +100,7 @@ async def chat(request: ChatRequest):
         )
         return response
     except Exception as exc:
+        _log.exception("POST /chat failed")
         log_event(
             "rag_chat_error",
             operation_id=operation_id,
