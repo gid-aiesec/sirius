@@ -33,3 +33,23 @@ def get_chat_history(user_id: str):
     except Exception as e:
         print(f"❌ Error fetching from Supabase: {e}")
         return []
+
+
+def get_recent_chat_history(user_id: str, limit: int = 5):
+    """Fetches the most recent chat messages for a user in chronological order."""
+    if not supabase:
+        return []
+    try:
+        safe_limit = max(1, limit)
+        response = (
+            supabase.table("chat_history")
+            .select("role, content, created_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(safe_limit)
+            .execute()
+        )
+        return list(reversed(response.data or []))
+    except Exception as e:
+        print(f"❌ Error fetching recent chat history from Supabase: {e}")
+        return []

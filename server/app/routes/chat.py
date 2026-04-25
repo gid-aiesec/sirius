@@ -9,7 +9,11 @@ from app.services.gemini_client import generate_response
 from app.services.prompt import build_rag_prompt
 from app.services.retrieval import retrieve_sources
 
-from app.services.supabase_client import save_chat_message, get_chat_history
+from app.services.supabase_client import (
+    get_chat_history,
+    get_recent_chat_history,
+    save_chat_message,
+)
 
 router = APIRouter()
 
@@ -45,8 +49,13 @@ async def chat(request: ChatRequest):
 
     sources = request.sources
     normalized_user_id = (request.user_id or "").strip()
+    recent_chat_history: list[dict] = []
     
     if normalized_user_id:
+        recent_chat_history = get_recent_chat_history(
+            normalized_user_id,
+            limit=5,
+        )
         save_chat_message(user_id=normalized_user_id, role="user", content=request.message)
 
     try:
@@ -66,6 +75,7 @@ async def chat(request: ChatRequest):
             request.system_prompt or "",
             sources,
             request.message,
+            recent_chat_history,
         )
         prompt_assembly_ms = round((perf_counter() - prompt_start) * 1000, 2)
 
@@ -90,6 +100,7 @@ async def chat(request: ChatRequest):
             user_id=normalized_user_id or None,
             top_k=request.top_k,
             source_count=len(sources),
+            history_message_count=len(recent_chat_history),
             retrieval_ms=retrieval_ms,
             prompt_assembly_ms=prompt_assembly_ms,
             rag_retrieval_and_prompt_assembly_ms=rag_retrieval_and_prompt_assembly_ms,
@@ -102,6 +113,7 @@ async def chat(request: ChatRequest):
             operation_id=operation_id,
             user_id=normalized_user_id or None,
             top_k=request.top_k,
+            history_message_count=len(recent_chat_history),
             query_text=request.message,
             error=str(exc),
         )
